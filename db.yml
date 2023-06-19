@@ -42,66 +42,66 @@ data:
   MYSQL_PASSWORD: ZGphbmdvdG9kbwo= 
   MYSQL_ROOT_PASSWORD: ZGphbmdvdG9kbwo=
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: app/v1
+kind: Deployment
 metadata:
-  name: mysql-pod
-#spec:
-#  selector:
-#    matchLabels:
-#      app: mysql-deployment
-#  template:
-#    metadata:
-#      labels:
-#        app: mysql-deployment
+  name: mysql-deployment
 spec:
-  containers:
-    - name: mysql
-      image: mysql:8.0.19
-      #command: ["--default-authentication-plugin=mysql_native_password"]
-      env:
-        - name: MYSQL_ROOT_PASSWORD
-          value: djangotodo
+  selector:
+    matchLabels:
+      app: mysql-deployment
+  template:
+    metadata:
+      labels:
+        app: mysql-deployment
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0.19
+          #command: ["--default-authentication-plugin=mysql_native_password"]
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: djangotodo
 #          valueFrom:
 #            secretKeyRef:
 #              name: mysql-secret
 #              key: MYSQL_ROOT_PASSWORD
-        - name: MYSQL_PASSWORD
-          value: djangotodo
+            - name: MYSQL_PASSWORD
+              value: djangotodo
 #          valueFrom:
 #            secretKeyRef:
 #              name: mysql-secret
 #              key: MYSQL_PASSWORD
-        - name: MYSQL_DATABASE
-          value: todo
+            - name: MYSQL_DATABASE
+              value: todo
 #          valueFrom:
 #            configMapKeyRef:
 #              name: mysql-config
 #              key: MYSQL_DATABASE
-        - name: MYSQL_ROOT_USER
-          value: root
+            - name: MYSQL_ROOT_USER
+              value: root
 #          valueFrom:
 #            configMapKeyRef:
 #              name: mysql-config
 #              key: MYSQL_ROOT_USER
-      volumeMounts:
-        - name: mysql-persistent-storage
-          mountPath: /var/lib/mysql
-  volumes:
-      - name: mysql-persistent-storage
-        persistentVolumeClaim:
-          claimName: mysql-pvc
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+      volumes:
+          - name: mysql-persistent-storage
+            persistentVolumeClaim:
+              claimName: mysql-pvc
 #---
-#apiVersion: v1
-#kind: Service
-#metadata:
-#  name: mysql-service
-#spec:
-#  selector:
-#    app: mysql-deployment
-#  ports:
-#  - protocol: TCP
-#    port: 3306
-#    targetPort: 3306
-#    nodePort: 30006
-#  type: NodePort
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+spec:
+  selector:
+    app: mysql-deployment
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+    #nodePort: 30006
+  type: ClusterIP

@@ -30,7 +30,6 @@ kind: Deployment
 metadata:
   name: nginx-deployment
 spec:
-  replicas: 3
   selector:
     matchLabels:
       app: nginx
@@ -40,10 +39,26 @@ spec:
         app: nginx
     spec:
       containers:
-      - name: nginx
-        image: nginx:latest
-        ports:
-        - containerPort: 80
+        - name: atiq-django-container
+          image: iatiqul/django-todo-django
+          env:
+            - name: SECRET_KEY
+              value: '8)810zj@#^2xp=1=2rkozbv8#)gub6m1a^9qf&)d-9&x9*c2a_'
+            - name: DATABASE_NAME
+              value: 'todo'
+            - name: DATABASE_USER
+              value: 'root'
+            - name: DATABASE_PASSWORD
+              value: 'djangotodo'
+            - name: DATABASE_HOST
+              value: '10.106.117.251'
+            - name: DATABASE_PORT
+              value: '3306'
+        - name: nginx
+          image: iatiqul/django-todo-nginx
+          ports:
+            - containerPort: 80
+
 ---
 apiVersion: v1
 kind: Service
