@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: web-pv
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  hostPath:
+    path: /opt/data-web
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: web-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: web-pv
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: uwsgi-pv
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  hostPath:
+    path: /opt/data-uwsgi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: uwsgi-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: uwsgi-pv
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: atiq-django-container
+          image: iatiqul/django-todo-django
+          command:
+            - sh
+            - -c
+            - |
+              python manage.py collectstatic --noinput
+              python manage.py makemigrations
+              python manage.py migrate
+              uwsgi --ini mysite.uwsgi.ini
+          env:
+            - name: SECRET_KEY
+              value: '8)810zj@#^2xp=1=2rkozbv8#)gub6m1a^9qf&)d-9&x9*c2a_'
+            - name: DATABASE_NAME
+              value: 'todo'
+            - name: DATABASE_USER
+              value: 'root'
+            - name: DATABASE_PASSWORD
+              value: 'djangotodo'
+            - name: DATABASE_HOST
+              value: '10.106.117.251'
+            - name: DATABASE_PORT
+              value: '3306'
+          volumeMounts:
+            - name: uwsgi-persistent-storage
+              mountPath: /tmp/uwsgi/
+            - name: web-persistent-storage
+              mountPath: /code/staticfiles/
+            - name: web-persistent-storage
+              mountPath: /var/www/mysite/assets/
+        - name: atiq-nginx-container
+          image: iatiqul/django-todo-nginx
+          volumeMounts:
+            - name: uwsgi-persistent-storage
+              mountPath: /tmp/uwsgi/
+            - name: web-persistent-storage
+              mountPath: /var/www/mysite/assets/
+          ports:
+            - containerPort: 80
+      volumes:
+        - name: web-persistent-storage
+          persistentVolumeClaim:
+            claimName: web-pvc
+        - name: uwsgi-persistent-storage
+          persistentVolumeClaim:
+            claimName: uwsgi-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+    nodePort: 30080
+  type: NodePort
